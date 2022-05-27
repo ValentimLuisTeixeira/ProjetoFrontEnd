@@ -10,7 +10,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 })
 export class AppComponent implements AfterViewInit {
   ngAfterViewInit(): void {
-    throw new Error('Method not implemented.');
+   
   }
   title = 'ANG-3d';
 

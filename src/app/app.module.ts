@@ -4,14 +4,20 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import * as THREE from 'three';
+import { RenderLobyComponent } from './modules/three.js/components/render-loby/render-loby.component';
+
+
+const scenes = [RenderLobyComponent,]
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+   
   ],
   providers: [],
   bootstrap: [AppComponent]
