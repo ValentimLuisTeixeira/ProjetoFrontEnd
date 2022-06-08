@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { RenderLobyComponent } from './modules/three.js/components/render-loby/render-loby.component';
 import { SocketIoModule, SocketIoConfig, Socket } from 'ngx-socket-io';
 import { CookieModule } from 'ngx-cookie';
+import { SocketListComponent } from './modules/three.js/components/socket-list/socket-list.component';
 
 const scenes = [RenderLobyComponent,]
 
@@ -24,9 +25,19 @@ export class SocketLobbySpace extends Socket{
 }
 
 
+
+
+
+
 @NgModule({
+
+exports:[
+
+],
+
   declarations: [
     AppComponent,
+   
     
   ],
   imports: [

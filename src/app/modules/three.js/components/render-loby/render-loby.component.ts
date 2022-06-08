@@ -9,6 +9,7 @@ import { CookieModule, CookieService } from 'ngx-cookie';
 import { Token } from '@angular/compiler';
 import jwtDecode from 'jwt-decode';
 import { Socket } from 'ngx-socket-io';
+import { Loader } from 'three';
 
 
 @Component({
@@ -25,84 +26,16 @@ export class RenderLobyComponent implements OnInit {
   @Input() roomname:string|undefined;
   idNameDiv = 'renderxpto';
 
-  constructor(private _th:ThJsService , private _Socket:LobbySocketService, private _cookie:CookieService) 
+
+  private _Socket:LobbySocketService |undefined;
+
+  constructor(private _th:ThJsService , 
+    //private _Socket:LobbySocketService, 
+    private _cookie:CookieService) 
   { 
-    this._Socket.listenEvent('toma-la').subscribe({
-      next:(response:string)=>{
-        console.log(response);
 
-        const decoded: any = jwtDecode(response);
-        /**
-         * Este toke nexpira em X
-         */
-        const tokenExp: Date = new Date(new Date(0).setUTCSeconds(decoded['exp']));
-
-        this._cookie.put('token', response, { expires: tokenExp });
     }
   
-    });
-  this._Socket.listenEvent('novo-user').subscribe({
-    next:(response:{idade:Date , identification: string})=>{
-      this.addBox(response);
-  }
-
-  });
-
-  this._Socket.listenEvent('user_Saiu').subscribe({
-    next:(response:{idade:Date , identification: string})=>{
-      console.log('Este', response.identification , 'Bazou');
-    }
-  });
-
-  this._Socket.listenEvent('room-data').subscribe({
-    next: (response: Array<{ idade: Date; identification: string; }>) => {
-      response.forEach((socket) => {
-        this.addBox(socket);
-      });
-    }
-  });
-  this._Socket.listenEvent('user_msg').subscribe({
-  next:(response:any)=>{
-    
-  }
-});
-
-
-  this._Socket.listenEvent('disconnect').subscribe({
-    next:(reason:any)=>{
-      console.log('BackEnd Caiu', reason);
-    }
-  });
-
-  
-  this._Socket.listenEvent('connect').subscribe({
-    next:(response:any)=>{
-     console.log('connectado ao BackEnd', response);
-
-
-     this._Socket.emitEvent({eventName:'join'})
-
-     
-     if(!this._cookie.hasKey('token')){
-      
-     }
-     else{
-      const decoded: any = jwtDecode(this._cookie.get('token')!);
-      const uuid = decoded['identification'];
-      const idade :string = decoded['idade']
-       this.addBox({idade :new Date(idade), identification:uuid});
-     }
-
-
-
-
-    }
-  });
-
-
-
-
-  }
   ngAfterViewInit():void{
     setTimeout(() => {
       const divSize = this._th.getElementSize({elementId: this.idNameDiv})
@@ -114,9 +47,74 @@ export class RenderLobyComponent implements OnInit {
       this._th.appendChild({elementId: this.idNameDiv});
       const env = new THREE.PMREMGenerator(this._th.renderer);
       this._th.scene.environment = env.fromScene(new RoomEnvironment(),0.1).texture
-      this.RenderFrame()
+      this.RenderFrame();
+      this.createSkyBox();
+      this.createGround();
      // this.AddBox();
     }, );
+
+  }
+
+
+
+
+  private createSkyBox(): void {
+    const loader = new THREE.CubeTextureLoader();
+    loader.load([
+      '/assets/png/skybox-green/right.png',
+      '/assets/png/skybox-green/left.png',
+      '/assets/png/skybox-green/top.png',
+      '/assets/png/skybox-green/bottom.png',
+      '/assets/png/skybox-green/front.png',
+      '/assets/png/skybox-green/back.png',
+    ], async (texture) => {
+      this._th.scene.background = texture;
+
+    });
+  }
+
+
+  private createGround():void{
+    const groundzero = new THREE.Mesh( new THREE.BoxGeometry( 1,1,1,6,1 ), new THREE.MeshPhysicalMaterial()  );
+    groundzero.scale.set(20,0.1,20);
+    groundzero.material.color = new THREE.Color('#338256');
+    groundzero.material.metalness = 1;
+    this._th.scene.add(groundzero);
+    this._Socket = new LobbySocketService();
+this.startListenEvents();
+  }
+
+
+  socketList: Array<string> = [];
+
+  private startListenEvents(): void {
+
+    this._Socket?.listenEvent('connect').subscribe({
+      next: () => {
+        console.log('Connected to backend');
+        this._Socket?.emitEvent({ eventName: 'join', data: { room: this.roomname } });
+        this._Socket?.emitEvent({ eventName: 'socket-list', data: { room: this.roomname } });
+      }
+    });
+    this._Socket?.listenEvent('disconnect').subscribe({
+      next: () => {
+        console.log('Disconnected from backend');
+        this._Socket?.emitEvent({ eventName: 'socket-list', data: { room: this.roomname } });
+      }
+    });
+    this._Socket?.listenEvent('new-join').subscribe({
+      next: (socketId) => {
+        console.log('New socketId', socketId);
+        this._Socket?.emitEvent({ eventName: 'socket-list', data: { room: this.roomname } });
+      }
+    });
+
+    this._Socket?.listenEvent('socket-list').subscribe({
+      next: (socketList: Array<string>) => {
+        console.log('Socket list', socketList);
+        this.socketList = socketList;
+      }
+    });
 
   }
 
@@ -161,5 +159,42 @@ conrols: OrbitControls|undefined;
 
   ngOnInit(): void {
   }
+
+  onMouseclick(event: MouseEvent): void {
+    event.preventDefault();
+    const mouse = new THREE.Vector3();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera( mouse, this._th.camera );
+    var intersects = raycaster.intersectObjects( this._th.scene.children, true );
+    if ( intersects.length > 0 ) {
+      const obj = intersects[0].object;
+      console.log( 'Mouse click on obj:', obj );
+      const caixa = new THREE.Mesh( new THREE.BoxGeometry( 1,1,1,6,1 ), new THREE.MeshPhysicalMaterial()  );
+      caixa.material.color = new THREE.Color('brown');
+      const point = intersects[0].point;
+      console.log('Real vector point raycaster', point);
+      caixa.position.set(point.x, point.y, point.z);
+      
+
+      caixa.name = 'cube';
+
+      if(this._th.scene.getObjectByName('cube')) {
+        this._th.scene.children.slice().forEach(object => { if(object.name == 'cube') { this._th.scene.remove(object); } });
+      }
+      this._th.scene.add(caixa);
+    }
+
+    
+
+
+
+
+
+}
+onKeydown(event:any){
+console.log(event.code);
+}
 
 }

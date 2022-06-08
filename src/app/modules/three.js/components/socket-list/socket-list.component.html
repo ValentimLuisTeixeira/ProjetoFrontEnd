@@ -1,0 +1,8 @@
+<div class="h-full w-96 py-2 overflow-hidden px-4 bg-cyan-900 duration-200 rounded-r">
+    <div class="flex-col flex text-gray-200 p-4 space-y-2">
+        <ng-container *ngFor="let socketname of socketlist">
+            <p class="uppercase font-semibold tracking-wide">{{ socketname }}</p>
+        </ng-container>
+        <p *ngIf="!socketlist.length">No socket found</p>
+    </div>
+</div>

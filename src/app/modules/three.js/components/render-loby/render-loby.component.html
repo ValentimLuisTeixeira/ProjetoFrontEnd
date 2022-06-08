@@ -1,2 +1,6 @@
 
-<div [id]="idNameDiv" class="w-full h-full"></div>
+<div [id]="idNameDiv" class="w-full h-full"(click)="onMouseclick($event)" (document:keydown)="onKeydown($event)">
+    <div class="absolute top-0 right-0">
+       <app-socket-list [socketlist]="socketList" ></app-socket-list>
+    </div>
+</div>
