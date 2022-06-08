@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
+import { ActivatedRoute, Params } from '@angular/router';
 
 @Component({
   selector: 'app-room-template',
@@ -7,7 +8,18 @@ import { Component, OnInit } from '@angular/core';
 })
 export class RoomTemplateComponent implements OnInit {
 
-  constructor() { }
+
+   roomname:string|undefined;
+
+  constructor(
+    private _root:ActivatedRoute,
+  ) { 
+    this._root.params.subscribe({
+      next:(Response:Params|{name : string})=>{
+        this.roomname = Response.name;
+      }
+    })
+  }
 
   ngOnInit(): void {
   }

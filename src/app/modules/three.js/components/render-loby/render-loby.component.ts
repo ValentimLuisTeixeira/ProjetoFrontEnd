@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { provideRoutes } from '@angular/router';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -22,7 +22,7 @@ import { Socket } from 'ngx-socket-io';
 })
 export class RenderLobyComponent implements OnInit {
 
-
+  @Input() roomname:string|undefined;
   idNameDiv = 'renderxpto';
 
   constructor(private _th:ThJsService , private _Socket:LobbySocketService, private _cookie:CookieService) 
@@ -53,6 +53,14 @@ export class RenderLobyComponent implements OnInit {
       console.log('Este', response.identification , 'Bazou');
     }
   });
+
+  this._Socket.listenEvent('room-data').subscribe({
+    next: (response: Array<{ idade: Date; identification: string; }>) => {
+      response.forEach((socket) => {
+        this.addBox(socket);
+      });
+    }
+  });
   this._Socket.listenEvent('user_msg').subscribe({
   next:(response:any)=>{
     
@@ -70,9 +78,24 @@ export class RenderLobyComponent implements OnInit {
   this._Socket.listenEvent('connect').subscribe({
     next:(response:any)=>{
      console.log('connectado ao BackEnd', response);
-    // if(!this._cookie.hasKey('token')){
-       this._Socket.emitEvent({eventName:'join'})
-     //}
+
+
+     this._Socket.emitEvent({eventName:'join'})
+
+     
+     if(!this._cookie.hasKey('token')){
+      
+     }
+     else{
+      const decoded: any = jwtDecode(this._cookie.get('token')!);
+      const uuid = decoded['identification'];
+      const idade :string = decoded['idade']
+       this.addBox({idade :new Date(idade), identification:uuid});
+     }
+
+
+
+
     }
   });
 
@@ -97,10 +120,19 @@ export class RenderLobyComponent implements OnInit {
 
   }
 
+
+conrols: OrbitControls|undefined;
+
   private RenderFrame():void{
-   new OrbitControls(this._th.camera, this._th.renderer.domElement  )
+   
+   this.conrols = new OrbitControls(this._th.camera, this._th.renderer.domElement  )
+   this.conrols.minDistance = 20;
+   this.conrols.maxDistance=50;
+   this.conrols.enablePan= false;
+   
    const render = ()=>{
      requestAnimationFrame(render);
+     this.conrols?.update();
      this._th.renderer.render(this._th.scene,this._th.camera)
    }
    render();
@@ -112,6 +144,19 @@ export class RenderLobyComponent implements OnInit {
     caixa.position.set(Math.floor(Math.random() * 20), 0,0);
     caixa.userData = socketData;
     this._th.scene.add(caixa);
+    console.log('RenderBox');
+
+
+    const decoded: any = jwtDecode(this._cookie.get('token')!);
+    const uuid = decoded['identification'];
+
+    if(uuid == socketData.identification){
+
+      this.conrols?.target.set(caixa.position.x,caixa.position.y,caixa.position.z);
+
+    }
+
+    
   }
 
   ngOnInit(): void {

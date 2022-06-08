@@ -3,7 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { RoomTemplateComponent } from './components/room-template/room-template.component';
 
 const routes: Routes = [{
-  path:'',
+  path:':name',
   component: RoomTemplateComponent,
 }];
 
